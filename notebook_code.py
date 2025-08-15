@@ -1,34 +1,39 @@
-# ===== AUTO-GUARD (inserción automática) =====
-# Asegura que existan 'cat_features' y 'num_features' antes de su uso,
-# incluso si el orden original de celdas del notebook las dejaba después.
-cat_features = globals().get('cat_features', [])
-num_features = globals().get('num_features', [])
+# ===== AUTO-GUARD DF =====
+# Asegura que 'df' exista temprano cuando se ejecute como script.
+try:
+    df  # noqa: F821
+except NameError:
+    try:
+        import pandas as pd
+        df = pd.read_csv("HDHI Admission data.csv")
+    except Exception:
+        df = None
+# ===== FIN AUTO-GUARD DF =====
 
-def __ensure_features_from_df():
-    global cat_features, num_features
-    if 'df' in globals():
-        try:
-            cat_features_ref = [
-                'GENDER', 'RURAL', 'TYPE OF ADMISSION-EMERGENCY/OPD',
-                'OUTCOME_DAMA', 'OUTCOME_DISCHARGE', 'OUTCOME_EXPIRY',
-                'SMOKING', 'ALCOHOL', 'DM', 'HTN', 'CAD', 'PRIOR CMP', 'CKD',
-                'RAISED CARDIAC ENZYMES', 'SEVERE ANAEMIA', 'ANAEMIA', 'STABLE ANGINA',
-                'ACS', 'STEMI', 'ATYPICAL CHEST PAIN', 'HEART FAILURE', 'HFREF', 'HFNEF',
-                'VALVULAR', 'CHB', 'SSS', 'AKI', 'CVA INFRACT', 'CVA BLEED', 'AF', 'VT', 'PSVT',
-                'CONGENITAL', 'UTI', 'NEURO CARDIOGENIC SYNCOPE', 'ORTHOSTATIC',
-                'INFECTIVE ENDOCARDITIS', 'DVT', 'CARDIOGENIC SHOCK', 'SHOCK',
-                'PULMONARY EMBOLISM'
-            ]
-            if not cat_features:
-                cat_features = [c for c in df.columns if c in cat_features_ref]
-            if not num_features:
-                num_features = [c for c in df.columns if c not in cat_features and c not in ['D.O.A', 'D.O.D']]
-        except Exception:
-            pass
+# ===== AUTO-GUARD FEATURES =====
+# Si existen columnas en df, define cat_features y num_features si aún no existen.
+try:
+    _cols = list(df.columns) if df is not None else None
+except NameError:
+    _cols = None
 
-# Intenta inicializar (no falla si aún no existe df)
-__ensure_features_from_df()
-# ===== FIN AUTO-GUARD =====
+if _cols is not None:
+    if 'cat_features' not in globals():
+        cat_features_ref = [
+            'GENDER', 'RURAL', 'TYPE OF ADMISSION-EMERGENCY/OPD',
+            'OUTCOME_DAMA', 'OUTCOME_DISCHARGE', 'OUTCOME_EXPIRY',
+            'SMOKING', 'ALCOHOL', 'DM', 'HTN', 'CAD', 'PRIOR CMP', 'CKD',
+            'RAISED CARDIAC ENZYMES', 'SEVERE ANAEMIA', 'ANAEMIA', 'STABLE ANGINA',
+            'ACS', 'STEMI', 'ATYPICAL CHEST PAIN', 'HEART FAILURE', 'HFREF', 'HFNEF',
+            'VALVULAR', 'CHB', 'SSS', 'AKI', 'CVA INFRACT', 'CVA BLEED', 'AF', 'VT', 'PSVT',
+            'CONGENITAL', 'UTI', 'NEURO CARDIOGENIC SYNCOPE', 'ORTHOSTATIC',
+            'INFECTIVE ENDOCARDITIS', 'DVT', 'CARDIOGENIC SHOCK', 'SHOCK',
+            'PULMONARY EMBOLISM'
+        ]
+        cat_features = [c for c in _cols if c in cat_features_ref]
+    if 'num_features' not in globals():
+        num_features = [c for c in _cols if c not in cat_features and c not in ['D.O.A', 'D.O.D']]
+# ===== FIN AUTO-GUARD FEATURES =====
 
 # === Cell 1 ===
 # Cargar librerías
@@ -51,35 +56,12 @@ import prince
 
 # === Cell 2 ===
 # Subir el token
-# from google.colab import files
-# files.upload()
+from google.colab import files
+files.upload()
 
 
 # === Cell 6 ===
 bd = pd.read_csv('HDHI Admission data.csv')
-# --- Patch auto: asegurar cat_features/num_features definidos después de cargar df ---
-try:
-    _cols = list(df.columns)
-except NameError:
-    _cols = None
-
-if _cols is not None:
-    if 'cat_features' not in globals():
-        cat_features_ref = [
-            'GENDER', 'RURAL', 'TYPE OF ADMISSION-EMERGENCY/OPD',
-            'OUTCOME_DAMA', 'OUTCOME_DISCHARGE', 'OUTCOME_EXPIRY',
-            'SMOKING', 'ALCOHOL', 'DM', 'HTN', 'CAD', 'PRIOR CMP', 'CKD',
-            'RAISED CARDIAC ENZYMES', 'SEVERE ANAEMIA', 'ANAEMIA', 'STABLE ANGINA',
-            'ACS', 'STEMI', 'ATYPICAL CHEST PAIN', 'HEART FAILURE', 'HFREF', 'HFNEF',
-            'VALVULAR', 'CHB', 'SSS', 'AKI', 'CVA INFRACT', 'CVA BLEED', 'AF', 'VT', 'PSVT',
-            'CONGENITAL', 'UTI', 'NEURO CARDIOGENIC SYNCOPE', 'ORTHOSTATIC',
-            'INFECTIVE ENDOCARDITIS', 'DVT', 'CARDIOGENIC SHOCK', 'SHOCK',
-            'PULMONARY EMBOLISM'
-        ]
-        cat_features = [c for c in cat_features_ref if c in df.columns]
-    if 'num_features' not in globals():
-        num_features = [c for c in df.columns if c not in cat_features and c not in ['D.O.A', 'D.O.D']]
-# --- Fin patch ---
 bd.head()
 
 
@@ -95,21 +77,6 @@ bd.drop('BNP', axis=1, inplace=True)
 ## Eliminar variables innevesarias
 
 df = bd.drop(['SNO', 'MRD No.'], axis=1)
-# --- Patch global definitions for cat_features and num_features ---
-cat_features_ref = [
-    'GENDER', 'RURAL', 'TYPE OF ADMISSION-EMERGENCY/OPD',
-    'OUTCOME_DAMA', 'OUTCOME_DISCHARGE', 'OUTCOME_EXPIRY',
-    'SMOKING', 'ALCOHOL', 'DM', 'HTN', 'CAD', 'PRIOR CMP', 'CKD',
-    'RAISED CARDIAC ENZYMES', 'SEVERE ANAEMIA', 'ANAEMIA', 'STABLE ANGINA',
-    'ACS', 'STEMI', 'ATYPICAL CHEST PAIN', 'HEART FAILURE', 'HFREF', 'HFNEF',
-    'VALVULAR', 'CHB', 'SSS', 'AKI', 'CVA INFRACT', 'CVA BLEED', 'AF', 'VT', 'PSVT',
-    'CONGENITAL', 'UTI', 'NEURO CARDIOGENIC SYNCOPE', 'ORTHOSTATIC',
-    'INFECTIVE ENDOCARDITIS', 'DVT', 'CARDIOGENIC SHOCK', 'SHOCK',
-    'PULMONARY EMBOLISM'
-]
-cat_features = [c for c in cat_features_ref if c in df.columns]
-num_features = [c for c in df.columns if c not in cat_features and c not in ['D.O.A', 'D.O.D']]
-# --- End patch ---
 df.drop('month year', axis=1, inplace=True)
 
 

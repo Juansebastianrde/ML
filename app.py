@@ -1,90 +1,101 @@
-
 import io
 import sys
 import contextlib
 from pathlib import Path
+
 import streamlit as st
 
-st.set_page_config(page_title="Ejecutar código del notebook (sin cambios)", layout="wide")
-st.title("Runner de tu notebook en Streamlit")
-st.caption("Usa **exactamente el mismo código** que nos diste. Solo provee el CSV y ejecuta.")
+st.set_page_config(page_title="Runner de tu notebook (CSV + código intacto)", layout="wide")
+st.title("Ejecutar tu notebook como app (sin modificar tu código)")
+st.caption("Sube el CSV y se ejecuta **notebook_code.py** exactamente como está. Capturamos stdout/stderr.")
 
-st.markdown("""
-**Cómo funciona**  
-1) Sube el **CSV** que espera tu código.  
-2) Indica el **nombre de archivo** con el que tu código lo busca (por ejemplo, `HDHI Admission data.csv` o `data.csv`).  
-3) (Opcional) Si tu script usa una ruta relativa distinta, cámbiala aquí.  
-4) Dale a **Ejecutar** y veremos la salida de `print()` y `stdout` de tu script.  
+st.markdown(
+    """
+**Cómo usar**
+1) Sube tu CSV (lo renombramos automáticamente a `HDHI Admission data.csv` para que tu script lo encuentre).
+2) Verifica que exista `notebook_code.py` en la raíz del repo (es tu código tal cual).
+3) Pulsa **Ejecutar código**.
+"""
+)
 
+# Nombre de archivo que tu script espera
+FIXED_CSV_NAME = "HDHI Admission data.csv"
 
-⚠️ **Importante**: No modificamos tu código. Si tu script usa `matplotlib.pyplot.show()` u otros backends gráficos, es posible que las figuras no aparezcan automáticamente en Streamlit.  
-Si quieres ver imágenes, guarda las figuras a archivos (p. ej. `plt.savefig(...)`) y luego podrás mostrarlas desde el panel de 'Archivos generados'.
-""")
-
-# --- Parámetros de ejecución ---
-default_csv_name = "data.csv"
-target_csv_name = "HDHI Admission data.csv"
+# Uploader del CSV (si ya lo subiste antes, puedes omitirlo)
 uploaded = st.file_uploader("Sube tu CSV", type=["csv"])
 
+# Ruta del script a ejecutar (tu código del notebook sin cambios)
 code_path = Path("notebook_code.py")
 st.write("Script que se ejecutará:", f"`{code_path}`")
 
-run = st.button("Ejecutar código")
+# Botón de ejecución
+run = st.button("Ejecutar código", use_container_width=True)
 
 # Área para logs
-log_area = st.empty()
+stdout_box = st.empty()
+stderr_box = st.empty()
 
-# Guardar CSV y ejecutar
 if run:
-    if uploaded is None:
-        st.error("Primero sube el CSV.")
-        st.stop()
+    # 1) Guardar el CSV con el nombre exacto que tu código espera
+    if uploaded is not None:
+        with open(FIXED_CSV_NAME, "wb") as f:
+            f.write(uploaded.getbuffer())
+        st.success(f"CSV guardado como `{FIXED_CSV_NAME}`.")
+    else:
+        # Si no subieron en este intento, seguimos si el archivo ya existe de antes
+        if not Path(FIXED_CSV_NAME).exists():
+            st.error(
+                f"No se encontró `{FIXED_CSV_NAME}`. Sube el CSV o deja un archivo con ese nombre en la raíz."
+            )
+            st.stop()
 
-    # Guardamos el CSV con el nombre exacto que tu script espera
-    with open(target_csv_name, "wb") as f:
-        f.write(uploaded.getbuffer())
-
+    # 2) Verificar script
     if not code_path.exists():
-        st.error("No se encontró 'notebook_code.py' en el directorio. Sube/añade tu código al repositorio con ese nombre.")
+        st.error("No se encontró `notebook_code.py` en el directorio actual.")
         st.stop()
 
-    # Ejecutamos el código EXACTO sin modificar, capturando stdout/stderr
-    with open(code_path, "r", encoding="utf-8") as f:
-        user_code = f.read()
+    # 3) Ejecutar el código EXACTO del usuario capturando stdout y stderr
+    try:
+        user_code = code_path.read_text(encoding="utf-8")
+    except Exception as e:
+        st.error(f"No se pudo leer `{code_path}`: {e}")
+        st.stop()
 
     stdout_buffer = io.StringIO()
     stderr_buffer = io.StringIO()
+
     try:
+        ns = {"__name__": "__main__", "__builtins__": __builtins__}
         with contextlib.redirect_stdout(stdout_buffer), contextlib.redirect_stderr(stderr_buffer):
-            # Ejecución en un nuevo namespace pero compartiendo globals de Streamlit si es necesario
-            ns = {"__name__": "__main__", "__builtins__": __builtins__}
-                exec(compile(user_code, str(code_path), "exec"), ns, ns)
+            exec(compile(user_code, str(code_path), "exec"), ns, ns)
     except Exception as e:
-        # Mostrar cualquier error
+        # Mostramos el error y luego igualmente volcamos stdout/stderr
         st.error(f"Ocurrió un error durante la ejecución: {e}")
-    finally:
-        out = stdout_buffer.getvalue()
-        err = stderr_buffer.getvalue()
 
-        if out.strip():
-            st.subheader("Salida (stdout)")
-            st.code(out, language="text")
-        else:
-            st.info("No hubo salida por `print()` o stdout.")
+    # 4) Mostrar salidas
+    out = stdout_buffer.getvalue()
+    err = stderr_buffer.getvalue()
 
-        if err.strip():
-            st.subheader("Errores / advertencias (stderr)")
-            st.code(err, language="text")
-
-# Mostrar archivos generados en el directorio de trabajo
-st.divider()
-st.subheader("Archivos en el directorio actual")
-try:
-    files = sorted([p for p in Path('.').iterdir() if p.is_file()])
-    if files:
-        for p in files:
-            st.write(f"• `{p.name}`  —  {p.stat().st_size} bytes")
+    st.subheader("Salida (stdout)")
+    if out.strip():
+        stdout_box.code(out, language="text")
     else:
-        st.write("No hay archivos aún.")
-except Exception as _:
-    pass
+        stdout_box.info("No hubo salida por `print()` o stdout.")
+
+    st.subheader("Errores / advertencias (stderr)")
+    if err.strip():
+        stderr_box.code(err, language="text")
+    else:
+        stderr_box.info("Sin salida en stderr.")
+
+    st.divider()
+    st.subheader("Archivos en el directorio actual")
+    try:
+        files = sorted([p for p in Path(".").iterdir() if p.is_file()])
+        if files:
+            for p in files:
+                st.write(f"• `{p.name}` — {p.stat().st_size} bytes")
+        else:
+            st.write("No hay archivos.")
+    except Exception:
+        pass

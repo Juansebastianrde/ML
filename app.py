@@ -10,14 +10,14 @@ import pandas as pd
 
 # ------------------ Config de página ------------------
 st.set_page_config(page_title="Notebook → App (sin descargar la base)", layout="wide")
-st.title("Ejecutar tu notebook como app (sin que el usuario suba nada)")
-st.caption("Usa el CSV incluido en el repo y ejecuta **notebook_code.py** tal cual. Capturamos stdout/stderr y mostramos gráficos.")
+st.title("Ejecutar tu notebook como app (dataset incluido)")
+st.caption("Usa el CSV del repo y ejecuta **notebook_code.py** tal cual. Capturamos stdout/stderr y mostramos gráficos.")
 
 # ================== Ajustes ==================
 # Nombre EXACTO que tu script usa:
 FIXED_CSV_NAME = "HDHI Admission data.csv"
 
-# Si prefieres guardar el CSV dentro de una carpeta, añádela aquí:
+# Ubicaciones candidatas dentro del repo
 LOCAL_CANDIDATES = [
     Path(FIXED_CSV_NAME),               # raíz
     Path("data") / FIXED_CSV_NAME,      # data/HDHI Admission data.csv
@@ -25,8 +25,8 @@ LOCAL_CANDIDATES = [
     Path("datasets") / FIXED_CSV_NAME,  # datasets/...
 ]
 
-# Si quieres un fallback desde un raw de GitHub, pon aquí la URL (opcional):
-RAW_FALLBACK_URL = ""  # ejemplo: "https://raw.githubusercontent.com/tuusuario/turepo/main/HDHI%20Admission%20data.csv"
+# Si quieres un fallback desde un raw de GitHub, configura aquí (opcional)
+RAW_FALLBACK_URL = ""  # ejemplo: "https://raw.githubusercontent.com/usuario/repo/main/HDHI%20Admission%20data.csv"
 
 # Ruta del script a ejecutar (tu código del notebook sin cambios)
 CODE_PATH = Path("notebook_code.py")
@@ -35,9 +35,9 @@ CODE_PATH = Path("notebook_code.py")
 def ensure_csv_available() -> Path:
     """
     Garantiza que exista un archivo con el nombre exacto FIXED_CSV_NAME en la raíz.
-    1) Si ya existe en la raíz → ok.
-    2) Si existe en data/ u otras rutas → lo copia a la raíz con el nombre exacto.
-    3) Si RAW_FALLBACK_URL está definido → lo descarga con pandas y lo guarda.
+    1) Si ya está en la raíz → ok.
+    2) Si está en data/ u otras rutas → lo copia a la raíz con el nombre exacto.
+    3) Si RAW_FALLBACK_URL está definido → lo descarga y guarda.
     4) Si nada de lo anterior, ofrece un uploader opcional.
     """
     root_csv = Path(FIXED_CSV_NAME)
@@ -47,6 +47,7 @@ def ensure_csv_available() -> Path:
     # Buscar en rutas candidatas y copiar
     for cand in LOCAL_CANDIDATES:
         if cand.exists():
+            root_csv.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(cand, root_csv)
             return root_csv
 
@@ -143,7 +144,6 @@ stderr_buffer = io.StringIO()
 before_imgs = set(p.name for p in _list_images(Path(".")))
 
 # Inyectamos display()
-_ inject_display_stub = _inject_display_stub  # evitar sombras de nombre con exec
 _inject_display_stub(ns)
 
 # Ejecutamos

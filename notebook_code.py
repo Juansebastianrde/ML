@@ -78,8 +78,8 @@ import prince
 
 # === Cell 2 ===
 # Subir el token
-#from google.colab import files
-#files.upload()
+from google.colab import files
+files.upload()
 
 
 # === Cell 6 ===
@@ -309,6 +309,7 @@ X_test_filtrado = pd.DataFrame(
 
 # Ahora sí, aplicar SelectKBest
 from sklearn.feature_selection import SelectKBest, f_regression
+from sklearn.ensemble import RandomForestRegressor
 
 selector = SelectKBest(score_func=f_regression, k='all')
 selector.fit(X_train_filtrado, y_train)

@@ -9,6 +9,19 @@ except NameError:
     except Exception:
         df = None
 # ===== FIN AUTO-GUARD DF =====
+# Lista global de features categóricas de referencia
+cat_features_ref = [
+    'GENDER', 'RURAL', 'TYPE OF ADMISSION-EMERGENCY/OPD',
+    'OUTCOME_DAMA', 'OUTCOME_DISCHARGE', 'OUTCOME_EXPIRY',
+    'SMOKING', 'ALCOHOL', 'DM', 'HTN', 'CAD', 'PRIOR CMP', 'CKD',
+    'RAISED CARDIAC ENZYMES', 'SEVERE ANAEMIA', 'ANAEMIA', 'STABLE ANGINA',
+    'ACS', 'STEMI', 'ATYPICAL CHEST PAIN', 'HEART FAILURE', 'HFREF', 'HFNEF',
+    'VALVULAR', 'CHB', 'SSS', 'AKI', 'CVA INFRACT', 'CVA BLEED', 'AF', 'VT', 'PSVT',
+    'CONGENITAL', 'UTI', 'NEURO CARDIOGENIC SYNCOPE', 'ORTHOSTATIC',
+    'INFECTIVE ENDOCARDITIS', 'DVT', 'CARDIOGENIC SHOCK', 'SHOCK',
+    'PULMONARY EMBOLISM'
+]
+
 
 # ===== AUTO-GUARD FEATURES =====
 # Si existen columnas en df, define cat_features y num_features si aún no existen.

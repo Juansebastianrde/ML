@@ -57,7 +57,8 @@ if run:
     try:
         with contextlib.redirect_stdout(stdout_buffer), contextlib.redirect_stderr(stderr_buffer):
             # Ejecución en un nuevo namespace pero compartiendo globals de Streamlit si es necesario
-            exec(compile(user_code, str(code_path), "exec"), {} , {})
+            ns = {"__name__": "__main__", "__builtins__": __builtins__}
+                exec(compile(user_code, str(code_path), "exec"), ns, ns)
     except Exception as e:
         # Mostrar cualquier error
         st.error(f"Ocurrió un error durante la ejecución: {e}")

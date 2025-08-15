@@ -22,6 +22,15 @@ cat_features_ref = [
     'PULMONARY EMBOLISM'
 ]
 
+# ===== FALLBACK cat_features_ref =====
+if 'cat_features_ref' not in globals():
+    try:
+        cat_features_ref = df.select_dtypes(include=['object', 'category']).columns.tolist()
+    except Exception:
+        cat_features_ref = []
+# ===== FIN FALLBACK cat_features_ref =====
+
+
 
 # ===== AUTO-GUARD FEATURES =====
 # Si existen columnas en df, define cat_features y num_features si aún no existen.

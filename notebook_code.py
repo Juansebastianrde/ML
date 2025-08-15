@@ -25,6 +25,29 @@ import prince
 
 # === Cell 6 ===
 bd = pd.read_csv('HDHI Admission data.csv')
+# --- Patch auto: asegurar cat_features/num_features definidos después de cargar df ---
+try:
+    _cols = list(df.columns)
+except NameError:
+    _cols = None
+
+if _cols is not None:
+    if 'cat_features' not in globals():
+        cat_features_ref = [
+            'GENDER', 'RURAL', 'TYPE OF ADMISSION-EMERGENCY/OPD',
+            'OUTCOME_DAMA', 'OUTCOME_DISCHARGE', 'OUTCOME_EXPIRY',
+            'SMOKING', 'ALCOHOL', 'DM', 'HTN', 'CAD', 'PRIOR CMP', 'CKD',
+            'RAISED CARDIAC ENZYMES', 'SEVERE ANAEMIA', 'ANAEMIA', 'STABLE ANGINA',
+            'ACS', 'STEMI', 'ATYPICAL CHEST PAIN', 'HEART FAILURE', 'HFREF', 'HFNEF',
+            'VALVULAR', 'CHB', 'SSS', 'AKI', 'CVA INFRACT', 'CVA BLEED', 'AF', 'VT', 'PSVT',
+            'CONGENITAL', 'UTI', 'NEURO CARDIOGENIC SYNCOPE', 'ORTHOSTATIC',
+            'INFECTIVE ENDOCARDITIS', 'DVT', 'CARDIOGENIC SHOCK', 'SHOCK',
+            'PULMONARY EMBOLISM'
+        ]
+        cat_features = [c for c in cat_features_ref if c in df.columns]
+    if 'num_features' not in globals():
+        num_features = [c for c in df.columns if c not in cat_features and c not in ['D.O.A', 'D.O.D']]
+# --- Fin patch ---
 bd.head()
 
 

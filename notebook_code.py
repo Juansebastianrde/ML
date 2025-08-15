@@ -78,8 +78,8 @@ import prince
 
 # === Cell 2 ===
 # Subir el token
-from google.colab import files
-files.upload()
+#from google.colab import files
+#files.upload()
 
 
 # === Cell 6 ===

@@ -1,3 +1,35 @@
+# ===== AUTO-GUARD (inserción automática) =====
+# Asegura que existan 'cat_features' y 'num_features' antes de su uso,
+# incluso si el orden original de celdas del notebook las dejaba después.
+cat_features = globals().get('cat_features', [])
+num_features = globals().get('num_features', [])
+
+def __ensure_features_from_df():
+    global cat_features, num_features
+    if 'df' in globals():
+        try:
+            cat_features_ref = [
+                'GENDER', 'RURAL', 'TYPE OF ADMISSION-EMERGENCY/OPD',
+                'OUTCOME_DAMA', 'OUTCOME_DISCHARGE', 'OUTCOME_EXPIRY',
+                'SMOKING', 'ALCOHOL', 'DM', 'HTN', 'CAD', 'PRIOR CMP', 'CKD',
+                'RAISED CARDIAC ENZYMES', 'SEVERE ANAEMIA', 'ANAEMIA', 'STABLE ANGINA',
+                'ACS', 'STEMI', 'ATYPICAL CHEST PAIN', 'HEART FAILURE', 'HFREF', 'HFNEF',
+                'VALVULAR', 'CHB', 'SSS', 'AKI', 'CVA INFRACT', 'CVA BLEED', 'AF', 'VT', 'PSVT',
+                'CONGENITAL', 'UTI', 'NEURO CARDIOGENIC SYNCOPE', 'ORTHOSTATIC',
+                'INFECTIVE ENDOCARDITIS', 'DVT', 'CARDIOGENIC SHOCK', 'SHOCK',
+                'PULMONARY EMBOLISM'
+            ]
+            if not cat_features:
+                cat_features = [c for c in df.columns if c in cat_features_ref]
+            if not num_features:
+                num_features = [c for c in df.columns if c not in cat_features and c not in ['D.O.A', 'D.O.D']]
+        except Exception:
+            pass
+
+# Intenta inicializar (no falla si aún no existe df)
+__ensure_features_from_df()
+# ===== FIN AUTO-GUARD =====
+
 # === Cell 1 ===
 # Cargar librerías
 import pandas as pd
@@ -63,6 +95,21 @@ bd.drop('BNP', axis=1, inplace=True)
 ## Eliminar variables innevesarias
 
 df = bd.drop(['SNO', 'MRD No.'], axis=1)
+# --- Patch global definitions for cat_features and num_features ---
+cat_features_ref = [
+    'GENDER', 'RURAL', 'TYPE OF ADMISSION-EMERGENCY/OPD',
+    'OUTCOME_DAMA', 'OUTCOME_DISCHARGE', 'OUTCOME_EXPIRY',
+    'SMOKING', 'ALCOHOL', 'DM', 'HTN', 'CAD', 'PRIOR CMP', 'CKD',
+    'RAISED CARDIAC ENZYMES', 'SEVERE ANAEMIA', 'ANAEMIA', 'STABLE ANGINA',
+    'ACS', 'STEMI', 'ATYPICAL CHEST PAIN', 'HEART FAILURE', 'HFREF', 'HFNEF',
+    'VALVULAR', 'CHB', 'SSS', 'AKI', 'CVA INFRACT', 'CVA BLEED', 'AF', 'VT', 'PSVT',
+    'CONGENITAL', 'UTI', 'NEURO CARDIOGENIC SYNCOPE', 'ORTHOSTATIC',
+    'INFECTIVE ENDOCARDITIS', 'DVT', 'CARDIOGENIC SHOCK', 'SHOCK',
+    'PULMONARY EMBOLISM'
+]
+cat_features = [c for c in cat_features_ref if c in df.columns]
+num_features = [c for c in df.columns if c not in cat_features and c not in ['D.O.A', 'D.O.D']]
+# --- End patch ---
 df.drop('month year', axis=1, inplace=True)
 
 
